@@ -19,8 +19,10 @@ val = [2.5,3.6875,4.875,6.0625,7.25,8.4375,9.625,10.8125,12]
 
 slack_token = os.environ["SLACK_TOKEN"]
 sc = SlackClient(slack_token)
+bucket_name = os.environ["door_close_bucket"]
 client = boto3.client('rekognition')
-object = "person"
+s3 = boto3.resource('s3')
+object = "Face"
 
 def slack_post_message(message):
     sc.api_call(
@@ -34,42 +36,41 @@ if __name__ == "__main__":
 
     while True:
 
-
-        print "take picture..."
-        os.system('fswebcam door_close.jpg')
-        print "uploading to S3..."
-        os.system('aws s3 cp door_close.jpg s3://bucket-name/door_close.jpg')
+        print("take picture...")
+        os.system("/usr/bin/fswebcam  --top-banner --line-colour '#FF000000' --banner-colour '#FF000000' -p YUYV -save ./door_close.jpg")
+        print("uploading to S3...")
+        s3.Bucket(bucket_name).upload_file('./door_close.jpg', 'door_close.jpg')
         # rekognition
-        print "analize image by rekognition..."
+        print("analize image by rekognition...")
         response = client.detect_labels(
         Image={
             'S3Object': {
-                'Bucket': 'bucket-name',
+                'Bucket': bucket_name,
                 'Name': 'door_close.jpg'
             }
         },
         MaxLabels=123,
         MinConfidence=10,
         )
-        
- 	print ""
-        print "============Rekognition Response================="
-        print response
-        print "================================================="
-        print ""
+
+        print("")
+        print("============Rekognition Response=================")
+        print(response)
+        print("=================================================")
+        print("")
 
  
         for i in response['Labels']:
 
             if i['Confidence'] > 12:
        
-                print ""
-		print "==============Detected Thing===================="
-                print i['Name']
-                print "================================================="
-                print ""
+                print("")
+                print("==============Detected Thing====================")
+                print(i['Name'])
+                print("=================================================")
+                print("")
 
-                if i['Name'] == True:
+                if i['Name'] == object:
                     print("Desired object [" + object  + "] is Detected.")
                     slack_post_message("doorを閉めるぜ！")
 
