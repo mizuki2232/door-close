@@ -6,12 +6,21 @@ import RPi.GPIO as GPIO
 import os
 import sys
 import time
-import ta7291
 from slackclient import SlackClient
+
+
+PIN = 23
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIN, GPIO.OUT)
+servo = GPIO.PWM(PIN, 50)       # GPIO.PWM(PIN, [[34m~Q波[34m~U(Hz)])
+
+val = [2.5,3.6875,4.875,6.0625,7.25,8.4375,9.625,10.8125,12]
 
 slack_token = os.environ["SLACK_TOKEN"]
 sc = SlackClient(slack_token)
 client = boto3.client('rekognition')
+object = "person"
 
 def slack_post_message(message):
     sc.api_call(
@@ -25,22 +34,22 @@ if __name__ == "__main__":
 
     while True:
 
-        # S3にdoor_close.jpgをアップロード
+
         print "take picture..."
         os.system('fswebcam door_close.jpg')
-        print "uploading..."
-        os.system('aws s3 cp door_close.jpg s3://smart-recognition/door_close.jpg')
+        print "uploading to S3..."
+        os.system('aws s3 cp door_close.jpg s3://bucket-name/door_close.jpg')
         # rekognition
-        print "analize image..."
+        print "analize image by rekognition..."
         response = client.detect_labels(
         Image={
             'S3Object': {
-                'Bucket': 'smart-recognition',
+                'Bucket': 'bucket-name',
                 'Name': 'door_close.jpg'
             }
         },
         MaxLabels=123,
-        MinConfidence=70,
+        MinConfidence=10,
         )
         
  	print ""
@@ -52,7 +61,7 @@ if __name__ == "__main__":
  
         for i in response['Labels']:
 
-            if i['Confidence'] > 80:
+            if i['Confidence'] > 12:
        
                 print ""
 		print "==============Detected Thing===================="
@@ -60,33 +69,33 @@ if __name__ == "__main__":
                 print "================================================="
                 print ""
 
-                if i['Name'] == "Person":
-                    print "Turn motor On!!!"
-                    print "Closing door!!!"
+                if i['Name'] == True:
+                    print("Desired object [" + object  + "] is Detected.")
                     slack_post_message("doorを閉めるぜ！")
 
-                    d = ta7291.ta7291(18, 24, 25)
-              
-                    print "Normal Powerup/down..."
-                    for power in range(0, 100, 10):
-                    	d.drive(power)
-                    	time.sleep(0.3)
-                    for power in range(100, 0, -10):
-                    	d.drive(power)
-                    	time.sleep(0.3)
-                    
-                    print "Max speed 10 seconds, and stop..."
-                    d.drive(100)
-                    time.sleep(1)
-                    d.drive(0)
-                    time.sleep(3)
-                    
-                    print "Max speed 10 seconds, and brake..."
-                    d.drive(100)
-                    time.sleep(10)
-                    d.brake()
-                    time.sleep(3)
-                    
-                    d.cleanup()
 
-        #time.sleep(15)
+                    try:
+                        servo.start(0.0)
+                
+                        servo.ChangeDutyCycle(val[0])
+                        print("servo.ChangeDutyCycle(val[0])")
+                        print(val[0])
+                        time.sleep(3)
+                        servo.ChangeDutyCycle(val[8])
+                        print("servo.ChangeDutyCycle(val[8])")
+                        print(val[8])
+                        time.sleep(3)
+                        servo.ChangeDutyCycle(val[0])
+                        print("servo.ChangeDutyCycle(val[0])")
+                        print(val[0])
+                        time.sleep(3)
+                
+                
+                    except KeyboardInterrupt:
+                        pass
+
+
+        servo.ChangeDutyCycle(val[4])
+        time.sleep(5)
+        servo.stop()
+        GPIO.cleanup()
