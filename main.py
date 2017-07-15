@@ -2,16 +2,31 @@
 # -*- coding: utf-8 -*-
 
 import boto3
+import cv2
 import RPi.GPIO as GPIO
 import os
 import sys
 import time
-import ta7291
+
 from slackclient import SlackClient
+
+
+PIN = 23
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIN, GPIO.OUT)
+servo = GPIO.PWM(PIN, 50)
+val = [2.5,3.6875,4.875,6.0625,7.25,8.4375,9.625,10.8125,12]
 
 slack_token = os.environ["SLACK_TOKEN"]
 sc = SlackClient(slack_token)
+
+bucket_name = os.environ["door_close_bucket"]
 client = boto3.client('rekognition')
+s3 = boto3.resource('s3')
+object = "Person"
+
+capture_image = "door_close.jpg"
+
 
 def slack_post_message(message):
     sc.api_call(
@@ -25,68 +40,67 @@ if __name__ == "__main__":
 
     while True:
 
-        # S3にdoor_close.jpgをアップロード
-        print "take picture..."
-        os.system('fswebcam door_close.jpg')
-        print "uploading..."
-        os.system('aws s3 cp door_close.jpg s3://smart-recognition/door_close.jpg')
+        print("take picture...")
+        c = cv2.VideoCapture(0)
+        r, img = c.read()
+        cv2.imwrite('./' + capture_image , img)
+        c.release()
+        print("uploading to S3...")
+        s3.Bucket(bucket_name).upload_file('./' + capture_image , capture_image)
         # rekognition
-        print "analize image..."
+        print("analize image by rekognition...")
         response = client.detect_labels(
         Image={
             'S3Object': {
-                'Bucket': 'smart-recognition',
-                'Name': 'door_close.jpg'
+                'Bucket': bucket_name,
+                'Name': capture_image
             }
         },
         MaxLabels=123,
-        MinConfidence=70,
+        MinConfidence=10,
         )
-        
- 	print ""
-        print "============Rekognition Response================="
-        print response
-        print "================================================="
-        print ""
+
+        print("")
+        print("============Rekognition Response=================")
+        print(response)
+        print("=================================================")
+        print("")
 
  
         for i in response['Labels']:
 
-            if i['Confidence'] > 80:
+            if i['Confidence'] > 12:
        
-                print ""
-		print "==============Detected Thing===================="
-                print i['Name']
-                print "================================================="
-                print ""
+                print("")
+                print("==============Detected Thing====================")
+                print(i['Name'])
+                print("=================================================")
+                print("")
 
-                if i['Name'] == "Person":
-                    print "Turn motor On!!!"
-                    print "Closing door!!!"
-                    slack_post_message("doorを閉めるぜ！")
+                if i['Name'] == object:
+                    print("Desired object [" + object  + "] is Detected.")
+                    # slack_post_message("doorを閉めるぜ！")
 
-                    d = ta7291.ta7291(18, 24, 25)
-              
-                    print "Normal Powerup/down..."
-                    for power in range(0, 100, 10):
-                    	d.drive(power)
-                    	time.sleep(0.3)
-                    for power in range(100, 0, -10):
-                    	d.drive(power)
-                    	time.sleep(0.3)
-                    
-                    print "Max speed 10 seconds, and stop..."
-                    d.drive(100)
-                    time.sleep(1)
-                    d.drive(0)
-                    time.sleep(3)
-                    
-                    print "Max speed 10 seconds, and brake..."
-                    d.drive(100)
-                    time.sleep(10)
-                    d.brake()
-                    time.sleep(3)
-                    
-                    d.cleanup()
 
-        #time.sleep(15)
+                    try:
+                        servo.start(0.0)
+                
+                        servo.ChangeDutyCycle(val[0])
+                        print("servo.ChangeDutyCycle(val[0])")
+                        print(val[0])
+                        time.sleep(1)
+                        servo.ChangeDutyCycle(val[8])
+                        print("servo.ChangeDutyCycle(val[8])")
+                        print(val[8])
+                        time.sleep(1.5)
+                        servo.ChangeDutyCycle(val[0])
+                        print("servo.ChangeDutyCycle(val[0])")
+                        print(val[0])
+                        time.sleep(1)
+               
+                
+                    except KeyboardInterrupt:
+                        pass
+
+
+        time.sleep(1.5)
