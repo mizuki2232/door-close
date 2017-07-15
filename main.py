@@ -26,6 +26,7 @@ s3 = boto3.resource('s3')
 object = "Person"
 
 c = cv2.VideoCapture(0)
+capture_image = "door_close.jpg"
 
 
 def slack_post_message(message):
@@ -42,16 +43,16 @@ if __name__ == "__main__":
 
         print("take picture...")
         r, img = c.read()
-        cv2.imwrite('./door_close.jpg', img)
+        cv2.imwrite('./' + capture_image , img)
         print("uploading to S3...")
-        s3.Bucket(bucket_name).upload_file('./door_close.jpg', 'door_close.jpg')
+        s3.Bucket(bucket_name).upload_file('./' + capture_image , capture_image)
         # rekognition
         print("analize image by rekognition...")
         response = client.detect_labels(
         Image={
             'S3Object': {
                 'Bucket': bucket_name,
-                'Name': 'door_close.jpg'
+                'Name': capture_image
             }
         },
         MaxLabels=123,
