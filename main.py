@@ -25,7 +25,6 @@ client = boto3.client('rekognition')
 s3 = boto3.resource('s3')
 object = "Person"
 
-c = cv2.VideoCapture(0)
 capture_image = "door_close.jpg"
 
 
@@ -42,8 +41,10 @@ if __name__ == "__main__":
     while True:
 
         print("take picture...")
+        c = cv2.VideoCapture(0)
         r, img = c.read()
         cv2.imwrite('./' + capture_image , img)
+        c.release()
         print("uploading to S3...")
         s3.Bucket(bucket_name).upload_file('./' + capture_image , capture_image)
         # rekognition
@@ -78,7 +79,7 @@ if __name__ == "__main__":
 
                 if i['Name'] == object:
                     print("Desired object [" + object  + "] is Detected.")
-                    slack_post_message("doorを閉めるぜ！")
+                    # slack_post_message("doorを閉めるぜ！")
 
 
                     try:
@@ -91,7 +92,7 @@ if __name__ == "__main__":
                         servo.ChangeDutyCycle(val[8])
                         print("servo.ChangeDutyCycle(val[8])")
                         print(val[8])
-                        time.sleep(1)
+                        time.sleep(1.5)
                         servo.ChangeDutyCycle(val[0])
                         print("servo.ChangeDutyCycle(val[0])")
                         print(val[0])
@@ -102,7 +103,4 @@ if __name__ == "__main__":
                         pass
 
 
-        servo.ChangeDutyCycle(val[4])
         time.sleep(1.5)
-        servo.stop()
-        GPIO.cleanup()
