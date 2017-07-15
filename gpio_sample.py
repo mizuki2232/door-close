@@ -20,24 +20,29 @@ if __name__ == '__main__':
         servo.start(0.0)
 
         servo.ChangeDutyCycle(val[0])
-        time.sleep(0.5)
+        print("servo.ChangeDutyCycle(val[0])")
+        time.sleep(1)
         servo.ChangeDutyCycle(val[8])
-        time.sleep(0.5)
+        print("servo.ChangeDutyCycle(val[8])")
+ 	print(val[8])
+        time.sleep(1)
         servo.ChangeDutyCycle(val[0])
-        time.sleep(0.5)
+        print("servo.ChangeDutyCycle(val[0])")
+        time.sleep(1)
 
-        while True:
-            for i, dc in enumerate(val):
-                servo.ChangeDutyCycle(dc)
-                print("Angle:" + str(i*22.5)+"  dc = %.4f" % dc) 
-                time.sleep(0.5)
-            for i, dc in enumerate( reversed(val) ):
-                servo.ChangeDutyCycle(dc)
-                print("Angle:" + str(180 - i*22.5)+"  dc = %.4f" % dc) 
-                time.sleep(0.5)
 
-        except KeyboardInterrupt:
-            pass
+       # while True:
+       #     for i, dc in enumerate(val):
+       #         servo.ChangeDutyCycle(dc)
+       #         print("Angle:" + str(i*22.5)+"  dc = %.4f" % dc) 
+       #         time.sleep(0.5)
+       #     for i, dc in enumerate( reversed(val) ):
+       #         servo.ChangeDutyCycle(dc)
+       #         print("Angle:" + str(180 - i*22.5)+"  dc = %.4f" % dc) 
+       #         time.sleep(0.5)
+
+    except KeyboardInterrupt:
+        pass
 
 servo.ChangeDutyCycle(val[4])
 time.sleep(1.5)
