@@ -25,6 +25,8 @@ client = boto3.client('rekognition')
 s3 = boto3.resource('s3')
 object = "Person"
 
+c = cv2.VideoCapture(0)
+
 
 def slack_post_message(message):
     sc.api_call(
@@ -39,8 +41,6 @@ if __name__ == "__main__":
     while True:
 
         print("take picture...")
-        # os.system("/usr/bin/fswebcam  --top-banner --line-colour '#FF000000' --banner-colour '#FF000000' -p YUYV -save ./door_close.jpg")
-        c = cv2.VideoCapture(0)
         r, img = c.read()
         cv2.imwrite('./door_close.jpg', img)
         print("uploading to S3...")
