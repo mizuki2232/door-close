@@ -6,23 +6,24 @@ import RPi.GPIO as GPIO
 import os
 import sys
 import time
+
 from slackclient import SlackClient
 
 
 PIN = 23
-
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PIN, GPIO.OUT)
 servo = GPIO.PWM(PIN, 50)       # GPIO.PWM(PIN, [[34m~Q波[34m~U(Hz)])
-
 val = [2.5,3.6875,4.875,6.0625,7.25,8.4375,9.625,10.8125,12]
 
 slack_token = os.environ["SLACK_TOKEN"]
 sc = SlackClient(slack_token)
+
 bucket_name = os.environ["door_close_bucket"]
 client = boto3.client('rekognition')
 s3 = boto3.resource('s3')
-object = "Face"
+object = "Person"
+
 
 def slack_post_message(message):
     sc.api_call(
@@ -81,16 +82,16 @@ if __name__ == "__main__":
                         servo.ChangeDutyCycle(val[0])
                         print("servo.ChangeDutyCycle(val[0])")
                         print(val[0])
-                        time.sleep(3)
+                        time.sleep(5)
                         servo.ChangeDutyCycle(val[8])
                         print("servo.ChangeDutyCycle(val[8])")
                         print(val[8])
-                        time.sleep(3)
+                        time.sleep(5)
                         servo.ChangeDutyCycle(val[0])
                         print("servo.ChangeDutyCycle(val[0])")
                         print(val[0])
-                        time.sleep(3)
-                
+                        time.sleep(5)
+               
                 
                     except KeyboardInterrupt:
                         pass
